@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.ino text eol=lf
+*.md text eol=lf
+*.bin binary
+*.elf binary
+*.hex binary
