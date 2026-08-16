@@ -11,9 +11,11 @@ namespace ASCOM.InEquator
     // There is no standard ASCOM device class for a one-axis tracker, so this
     // driver exposes a small custom COM interface. Clients use the ProgID
     // "ASCOM.InEquator.Tracker" directly (see the InEquatorTest console app).
+    // AutoDispatch: custom COM interface exposed via IDispatch so clients can
+    // late-bind through the ProgID (see ascom/InEquatorTest).
     [Guid("6e91f7a4-2c5d-4b8e-9a31-d4c0e5b72f17")]
     [ProgId("ASCOM.InEquator.Tracker")]
-    [ClassInterface(ClassInterfaceType.None)]
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public class Tracker
     {
         private ITrackerConnection connection;
