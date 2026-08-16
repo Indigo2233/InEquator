@@ -15,10 +15,11 @@ struct MotionStatus
     int32_t position { 0 };   // steps
     bool tracking { false };
     int32_t jogRate { 0 };    // x10000 of sidereal
+    int32_t jogStepsPerSec { 0 }; // explicit jog rate in steps/s
     bool moving { false };
 };
 
-// "P <steps>;T <true|false>;Q <rate>;M <true|false>[#]"
+// "P <steps>;T <true|false>;Q <rate>;Y <stepsPerSec>;M <true|false>[#]"
 bool parseMotionStatus(const char *response, MotionStatus &status);
 
 // "#" identification: "InEquator RA Tracker ver <n>"

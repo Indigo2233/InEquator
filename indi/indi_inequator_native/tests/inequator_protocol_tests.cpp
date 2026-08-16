@@ -27,23 +27,26 @@ int main()
     {
         MotionStatus status;
         check(InEquatorProtocol::parseMotionStatus(
-                  "P 12345;T true;Q 80000;M false#", status),
+                  "P 12345;T true;Q 80000;Y 100;M false#", status),
               "parse full motion status");
         check(status.position == 12345, "position parsed");
         check(status.tracking == true, "tracking parsed");
         check(status.jogRate == 80000, "jog rate parsed");
+        check(status.jogStepsPerSec == 100, "jog steps/s parsed");
         check(status.moving == false, "moving parsed");
     }
     {
         MotionStatus status;
-        check(InEquatorProtocol::parseMotionStatus("P -12;T false;Q 10000;M true#", status),
+        check(InEquatorProtocol::parseMotionStatus("P -12;T false;Q 10000;Y 4000;M true#", status),
               "parse negative position");
         check(status.position == -12 && status.moving == true, "negative/moving values");
     }
     {
         MotionStatus status;
-        check(!InEquatorProtocol::parseMotionStatus("P 1;T maybe;Q 2;M false#", status),
+        check(!InEquatorProtocol::parseMotionStatus("P 1;T maybe;Q 2;Y 3;M false#", status),
               "reject invalid boolean");
+        check(!InEquatorProtocol::parseMotionStatus("P 1;T true;Q 2;M false#", status),
+              "reject old format without Y");
         check(!InEquatorProtocol::parseMotionStatus("garbage", status), "reject garbage");
     }
 
@@ -57,7 +60,7 @@ int main()
           "version parsed");
 
     check(InEquatorProtocol::isErrorResponse("ERR:jog_rate#"), "error response detected");
-    check(!InEquatorProtocol::isErrorResponse("P 1;T true;Q 1;M false#"),
+    check(!InEquatorProtocol::isErrorResponse("P 1;T true;Q 1;Y 100;M false#"),
           "normal response not an error");
 
     const std::string json =

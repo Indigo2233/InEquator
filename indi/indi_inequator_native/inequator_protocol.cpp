@@ -20,11 +20,12 @@ bool parseMotionStatus(const char *response, MotionStatus &status)
 
     int position = 0;
     int jogRate = 0;
+    int jogStepsPerSec = 0;
     char tracking[8] = { 0 };
     char moving[8] = { 0 };
-    const int matched = std::sscanf(response, " P %d ; T %7[^;] ; Q %d ; M %7[^;]",
-                                    &position, tracking, &jogRate, moving);
-    if (matched != 4)
+    const int matched = std::sscanf(response, " P %d ; T %7[^;] ; Q %d ; Y %d ; M %7[^;]",
+                                    &position, tracking, &jogRate, &jogStepsPerSec, moving);
+    if (matched != 5)
         return false;
 
     std::string trackingText(tracking);
@@ -55,6 +56,7 @@ bool parseMotionStatus(const char *response, MotionStatus &status)
     status.position = position;
     status.tracking = trackingBool;
     status.jogRate = jogRate;
+    status.jogStepsPerSec = jogStepsPerSec;
     status.moving = movingBool;
     return true;
 }
