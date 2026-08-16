@@ -8,6 +8,9 @@ Usage examples:
     python tracker_cli.py status
     python tracker_cli.py track on
     python tracker_cli.py rate 80000
+    python tracker_cli.py rate-steps 400
+    python tracker_cli.py deg -0.5
+    python tracker_cli.py arcsec 30
     python tracker_cli.py jog cw
     python tracker_cli.py halt
     python tracker_cli.py move 1000
@@ -86,6 +89,12 @@ def main(argv=None):
     p.add_argument("value", choices=["on", "off"])
     p = sub.add_parser("rate", help="set jog rate, x10000 of sidereal (80000 = 8x)")
     p.add_argument("value", type=int)
+    p = sub.add_parser("rate-steps", help="set explicit jog rate in steps/s (1..10000)")
+    p.add_argument("value", type=int)
+    p = sub.add_parser("deg", help="move by signed degrees (e.g. -0.5)")
+    p.add_argument("value", type=float)
+    p = sub.add_parser("arcsec", help="move by signed arcseconds (e.g. 30)")
+    p.add_argument("value", type=float)
     p = sub.add_parser("jog", help="continuous jog")
     p.add_argument("direction", choices=["cw", "ccw"])
     sub.add_parser("halt", help="stop jog")
@@ -109,7 +118,7 @@ def main(argv=None):
             fields = client.status()
             print("Position :", fields.get("P", "?"))
             print("Tracking :", fields.get("T", "?"))
-            print("Jog rate :", fields.get("Q", "?"), "(x10000)")
+            print("Jog rate :", fields.get("Q", "?"), "(x10000) /", fields.get("Y", "?"), "steps/s")
             print("Moving   :", fields.get("M", "?"))
         elif args.command == "info":
             print(json.dumps(client.json_status(), indent=2, ensure_ascii=False))
@@ -117,6 +126,12 @@ def main(argv=None):
             print(client.request(f"B {'1' if args.value == 'on' else '0'}"))
         elif args.command == "rate":
             print(client.request(f"Q {args.value}"))
+        elif args.command == "rate-steps":
+            print(client.request(f"Y {args.value}"))
+        elif args.command == "deg":
+            print(client.request(f"MD {round(args.value * 1000)}"))
+        elif args.command == "arcsec":
+            print(client.request(f"MA {round(args.value)}"))
         elif args.command == "jog":
             print(client.request("M+" if args.direction == "cw" else "M-"))
         elif args.command == "halt":
