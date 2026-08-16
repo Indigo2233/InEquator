@@ -20,14 +20,16 @@ namespace ASCOM.InEquator
     internal static class TrackerProtocol
     {
         private static readonly Regex MotionStatusPattern = new Regex(
-            @"^\s*P\s+(-?\d+)\s*;\s*T\s+(true|false)\s*;\s*Q\s+(-?\d+)\s*;\s*M\s+(true|false)\s*#?\s*$",
+            @"^\s*P\s+(-?\d+)\s*;\s*T\s+(true|false)\s*;\s*Q\s+(-?\d+)\s*;\s*Y\s+(-?\d+)\s*;\s*M\s+(true|false)\s*#?\s*$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
-        internal static bool TryParseMotionStatus(string response, out int position, out bool tracking, out int jogRate, out bool moving)
+        internal static bool TryParseMotionStatus(string response, out int position, out bool tracking,
+            out int jogRate, out int jogStepsPerSec, out bool moving)
         {
             position = 0;
             tracking = false;
             jogRate = 0;
+            jogStepsPerSec = 0;
             moving = false;
 
             Match match = MotionStatusPattern.Match(response ?? string.Empty);
@@ -35,7 +37,8 @@ namespace ASCOM.InEquator
             if (!int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out position)) return false;
             if (!bool.TryParse(match.Groups[2].Value, out tracking)) return false;
             if (!int.TryParse(match.Groups[3].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out jogRate)) return false;
-            if (!bool.TryParse(match.Groups[4].Value, out moving)) return false;
+            if (!int.TryParse(match.Groups[4].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out jogStepsPerSec)) return false;
+            if (!bool.TryParse(match.Groups[5].Value, out moving)) return false;
             return true;
         }
 

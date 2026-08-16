@@ -25,6 +25,7 @@ namespace ASCOM.InEquator
         private bool lastMoving = false;
         private bool lastTracking = false;
         private int lastJogRate = 80000;
+        private int lastJogStepsPerSec = 100;
         private int stepsPerOutputRev = 307200;
         private double trackingRate = 3.5653;
 
@@ -304,6 +305,39 @@ namespace ASCOM.InEquator
             }
         }
 
+        public int JogRateStepsPerSec
+        {
+            get { UpdateStatusIfNeeded(); return lastJogStepsPerSec; }
+            set
+            {
+                if (value < 1 || value > 10000)
+                    throw new ASCOM.InvalidValueException("JogRateStepsPerSec", value.ToString(CultureInfo.InvariantCulture), "1..10000");
+                ExecuteFirmwareCommand("Y " + value.ToString(CultureInfo.InvariantCulture) + "#");
+                lastJogStepsPerSec = value;
+                lastUpdate = 0;
+            }
+        }
+
+        public void MoveDegrees(double degrees)
+        {
+            if (degrees < -1000.0 || degrees > 1000.0)
+                throw new ASCOM.InvalidValueException("MoveDegrees", degrees.ToString(CultureInfo.InvariantCulture), "-1000..1000");
+            long deg1000 = (long)Math.Round(degrees * 1000.0, MidpointRounding.AwayFromZero);
+            ExecuteFirmwareCommand("MD " + deg1000.ToString(CultureInfo.InvariantCulture) + "#");
+            lastMoving = true;
+            lastUpdate = 0;
+        }
+
+        public void MoveArcsec(double arcsec)
+        {
+            if (arcsec < -1296000.0 || arcsec > 1296000.0)
+                throw new ASCOM.InvalidValueException("MoveArcsec", arcsec.ToString(CultureInfo.InvariantCulture), "-1296000..1296000");
+            long value = (long)Math.Round(arcsec, MidpointRounding.AwayFromZero);
+            ExecuteFirmwareCommand("MA " + value.ToString(CultureInfo.InvariantCulture) + "#");
+            lastMoving = true;
+            lastUpdate = 0;
+        }
+
         public void JogCW()
         {
             ExecuteFirmwareCommand("M+#");
@@ -421,13 +455,15 @@ namespace ASCOM.InEquator
             int position;
             bool tracking;
             int jogRate;
+            int jogStepsPerSec;
             bool moving;
-            if (!TrackerProtocol.TryParseMotionStatus(response, out position, out tracking, out jogRate, out moving))
+            if (!TrackerProtocol.TryParseMotionStatus(response, out position, out tracking, out jogRate, out jogStepsPerSec, out moving))
                 throw new ASCOM.DriverException("Unrecognized tracker status response: " + response);
 
             lastPos = position;
             lastTracking = tracking;
             lastJogRate = jogRate;
+            lastJogStepsPerSec = jogStepsPerSec;
             lastMoving = moving;
             lastUpdate = now;
         }
