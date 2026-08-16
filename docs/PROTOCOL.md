@@ -7,7 +7,7 @@ TCP 端口 `4030`，命令以 `#` 结尾，设备在串口与 TCP 上使用同�
 
 | 命令 | 说明 | 响应 |
 | --- | --- | --- |
-| `#` | 设备识别 | `InEquator RA Tracker ver 2001#` |
+| `#` | 设备识别 | `InEquator RA Tracker ver 2002#` |
 | `V#` | 固件版本 | `V 2001#` |
 | `G#` | 状态 | `P <steps>;T <0\|1>;Q <rate>;Y <stepsPerSec>;M <0\|1>#` |
 | `B <0\|1>#` | 跟踪开关 | `B true#` |
@@ -32,7 +32,7 @@ TCP 端口 `4030`，命令以 `#` 结尾，设备在串口与 TCP 上使用同�
 
 ```json
 {
-  "firmware": 2001,
+  "firmware": 2002,
   "positionSteps": 12345,
   "tracking": true,
   "jogRate": 80000,

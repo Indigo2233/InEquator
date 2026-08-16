@@ -26,8 +26,8 @@
 #define CW_PIN 13     // D7
 #define CCW_PIN 0     // D3 (GPIO0)
 
-#define DEVICE_RESPONSE "InEquator RA Tracker ver 2001"
-#define FIRMWARE_VERSION 2001
+#define DEVICE_RESPONSE "InEquator RA Tracker ver 2002"
+#define FIRMWARE_VERSION 2002
 #define EEPROM_SIZE 512
 #define SETTINGS_MAGIC 0x1EE0C201UL
 #define MEMORY_MAGIC 0x4D454D35UL

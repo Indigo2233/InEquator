@@ -7,7 +7,7 @@ single-axis RA tracker.
 
 | Controller | Minimum firmware | Connection |
 | --- | ---: | --- |
-| ESP8266 RA tracker | 2001 | USB serial or TCP |
+| ESP8266 RA tracker | 2002 | USB serial or TCP |
 
 Serial settings are 9600-8-N-1. TCP uses port 4030 and defaults to
 `192.168.4.1`.
