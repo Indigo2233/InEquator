@@ -14,6 +14,17 @@ ESP8266 单轴赤道仪（RA 跟踪器）：42 步进 + 1:96 蜗轮蜗杆，恒�
 - `indi/` — 原生 INDI 驱动（进行中）
 - `tools/` — 协议调试工具
 
+## 当前进度
+
+| 组件 | 状态 |
+| --- | --- |
+| ESP8266 固件（`firmware/InEquatorFirmware`） | ✅ 编译通过（esp8266 core 3.1.2） |
+| TCP 协议 + Python CLI（`tools/tracker_cli.py`） | ✅ 可用 |
+| ASCOM 驱动（`ascom/InEquatorDriver`，自定义接口） | ✅ 编译通过，注册脚本 `tools/register-ascom.ps1` |
+| ASCOM 测试客户端（`ascom/InEquatorTest`） | ✅ 编译通过，待接硬件联调 |
+| 原生 INDI 驱动（`indi/indi_inequator_native`） | ✅ 协议层单测通过；完整编译需 Linux + libindi |
+| 硬件台架 / 星点实测 | ⏳ 待驱动板接线完成 |
+
 ## 快速开始
 
 1. 按 `firmware/InEquatorFirmware/README.md` 接线并编译烧录。
