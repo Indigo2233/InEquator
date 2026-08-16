@@ -51,6 +51,8 @@ struct TrackerSettings {
   float siderealPeriod;  // seconds (86164.09)
   long ppmCorrection;    // clock/rate correction, parts per million
   int jogMultiplier;     // jog rate, x10000 of sidereal (80000 = 8x)
+  int jogStepsPerSec;    // explicit jog rate in steps/s (used when rateMode == 1)
+  uint8_t rateMode;      // 0 = sidereal multiplier, 1 = explicit steps/s
   int maxJogRate;        // steps/s cap
   int acceleration;      // steps/s^2
   bool tracking;
@@ -148,7 +150,22 @@ h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600}
  </div>
  <div class="big" id="angle">--.--°</div>
  <div class="muted" id="steps">步数 --</div>
+ <div class="muted" id="rateInfo">--</div>
  <div class="row" id="presets"></div>
+ <div class="row">
+  <input type="number" id="rateSteps" placeholder="速率 步/s" style="flex:1;margin:0">
+  <button id="applyRateSteps">按步/s 设速率</button>
+ </div>
+ <div class="row">
+  <input type="number" id="degMove" placeholder="角度 °" style="flex:1;margin:0">
+  <button id="degCW">＋°</button>
+  <button id="degCCW">－°</button>
+ </div>
+ <div class="row">
+  <input type="number" id="arcsecMove" placeholder="角秒 ″" style="flex:1;margin:0">
+  <button id="arcE">＋″</button>
+  <button id="arcW">－″</button>
+ </div>
  <div class="row">
   <button id="cw" class="jog-btn">CW 正转</button>
   <button id="ccw" class="jog-btn">CCW 反转</button>
@@ -183,7 +200,7 @@ const $=id=>document.getElementById(id);
 let state={};
 function api(path,body){return fetch(path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined}).then(r=>{if(!r.ok)throw r;return r.json()});}
 function fmtAngle(s){if(!state.stepsPerOutputRev)return '--.--°';const mod=((s%state.stepsPerOutputRev)+state.stepsPerOutputRev)%state.stepsPerOutputRev;return (mod/state.stepsPerOutputRev*360).toFixed(2)+'°';}
-function setState(s){state=s;$('angle').textContent=fmtAngle(s.positionSteps);$('steps').textContent='步数 '+s.positionSteps+'  ·  每转 '+s.stepsPerOutputRev+' 步';$('tracking').textContent=s.tracking?'跟踪：开':'跟踪：关';$('tracking').classList.toggle('on',!!s.tracking);renderPresets();}
+function setState(s){state=s;$('angle').textContent=fmtAngle(s.positionSteps);$('steps').textContent='步数 '+s.positionSteps+'  ·  每转 '+s.stepsPerOutputRev+' 步';$('rateInfo').textContent=s.rateMode===1?('速率 '+s.jogStepsPerSec+' 步/s'):('速率 '+s.jogRate/10000+'× 恒星速');$('tracking').textContent=s.tracking?'跟踪：开':'跟踪：关';$('tracking').classList.toggle('on',!!s.tracking);renderPresets();}
 const PRESETS=[{n:10000,l:'1×'},{n:80000,l:'8×'},{n:320000,l:'32×'},{n:1280000,l:'128×'},{n:2560000,l:'256×'}];
 function renderPresets(){$('presets').innerHTML='';PRESETS.forEach(p=>{const b=document.createElement('button');b.textContent=p.l;b.classList.toggle('on',state.jogRate===p.n);b.onclick=()=>api('/api/settings',{jogMultiplier:p.n}).then(setState);$('presets').append(b);});}
 function jog(action){api('/api/jog',{action}).then(setState);}
@@ -192,6 +209,11 @@ holdJog($('cw'),'cw');holdJog($('ccw'),'ccw');
 $('tracking').onclick=()=>api('/api/tracking',{tracking:!state.tracking}).then(setState);
 $('halt').onclick=()=>jog('halt');
 $('setZero').onclick=()=>api('/api/set-position',{steps:0}).then(setState);
+$('applyRateSteps').onclick=()=>api('/api/settings',{rateMode:1,jogStepsPerSec:+$('rateSteps').value}).then(setState);
+$('degCW').onclick=()=>api('/api/jog',{action:'move_deg',degrees:Math.abs(+$('degMove').value||0)}).then(setState);
+$('degCCW').onclick=()=>api('/api/jog',{action:'move_deg',degrees:-Math.abs(+$('degMove').value||0)}).then(setState);
+$('arcE').onclick=()=>api('/api/jog',{action:'move_arcsec',arcsec:Math.abs(+$('arcsecMove').value||0)}).then(setState);
+$('arcW').onclick=()=>api('/api/jog',{action:'move_arcsec',arcsec:-Math.abs(+$('arcsecMove').value||0)}).then(setState);
 $('saveSettings').onclick=()=>{const body={motorSteps:+$('motorSteps').value,gearRatio:+$('gearRatio').value,microsteps:+$('microsteps').value,siderealPeriod:+$('siderealPeriod').value,ppm:+$('ppm').value,maxJogRate:+$('maxJogRate').value,acceleration:+$('acceleration').value,hold:$('hold').checked,reversed:$('reversed').checked};if($('staSsid').value.trim())body.staSsid=$('staSsid').value.trim();if($('staPassword').value)body.staPassword=$('staPassword').value;api('/api/settings',body).then(()=>{$('settingsMessage').textContent='设置已保存';}).catch(()=>{$('settingsMessage').textContent='保存失败，请检查输入值';});};
 function renderMemories(m){$('memories').innerHTML='';m.memories.forEach(mm=>{const row=document.createElement('div');row.className='memory-row';const name=document.createElement('input');name.value=mm.name||('目标 '+(mm.slot+1));const pos=document.createElement('span');pos.className='memory-pos';pos.textContent=mm.valid?fmtAngle(mm.position):'未保存';const save=document.createElement('button');save.textContent='保存';save.onclick=()=>api('/api/memories',{slot:mm.slot,action:'save',name:name.value.trim()}).then(renderMemories);const move=document.createElement('button');move.textContent='移动';move.disabled=!mm.valid;move.onclick=()=>api('/api/memories',{slot:mm.slot,action:'move'}).then(()=>refresh());row.append(name,pos,save,move);$('memories').append(row);});}
 async function refresh(){try{const s=await api('/api/status');setState(s);fillSettings(s);}catch(e){$('link').textContent='已断开';}}
@@ -238,6 +260,8 @@ void loadSettings() {
     settings.siderealPeriod = 86164.09F;
     settings.ppmCorrection = 0;
     settings.jogMultiplier = 80000;
+    settings.jogStepsPerSec = 100;
+    settings.rateMode = 0;
     settings.maxJogRate = 4000;
     settings.acceleration = 2000;
     settings.tracking = false;
@@ -262,6 +286,14 @@ void loadSettings() {
   }
   if (settings.jogMultiplier < 100 || settings.jogMultiplier > 1000000) {
     settings.jogMultiplier = 80000;
+    settingsChanged = true;
+  }
+  if (settings.jogStepsPerSec < 1 || settings.jogStepsPerSec > 10000) {
+    settings.jogStepsPerSec = 100;
+    settingsChanged = true;
+  }
+  if (settings.rateMode > 1) {
+    settings.rateMode = 0;
     settingsChanged = true;
   }
   if (settings.maxJogRate < 100 || settings.maxJogRate > 10000) {
@@ -305,11 +337,22 @@ float siderealRate() {
 }
 
 float jogRateSteps() {
-  float r = siderealRate() * settings.jogMultiplier / 10000.0F;
+  float r = (settings.rateMode == 1)
+      ? (float)settings.jogStepsPerSec
+      : siderealRate() * settings.jogMultiplier / 10000.0F;
   if (r > settings.maxJogRate) {
     r = settings.maxJogRate;
   }
   return r;
+}
+
+// Output-axis angle conversions (1 rev = stepsPerOutputRev steps).
+int32_t degreesToSteps(float degrees) {
+  return (int32_t)lroundf(degrees * (float)stepsPerOutputRev() / 360.0F);
+}
+
+int32_t arcsecToSteps(float arcsec) {
+  return (int32_t)lroundf(arcsec * (float)stepsPerOutputRev() / 1296000.0F);
 }
 
 bool isMoving() {
@@ -370,6 +413,8 @@ String statusResponse() {
   response += boolText(settings.tracking);
   response += ";Q ";
   response += settings.jogMultiplier;
+  response += ";Y ";
+  response += settings.jogStepsPerSec;
   response += ";M ";
   response += boolText(isMoving());
   response += "#";
@@ -427,6 +472,10 @@ String statusJson() {
   json += boolText(settings.tracking);
   json += ",\"jogRate\":";
   json += settings.jogMultiplier;
+  json += ",\"jogStepsPerSec\":";
+  json += settings.jogStepsPerSec;
+  json += ",\"rateMode\":";
+  json += settings.rateMode;
   json += ",\"isMoving\":";
   json += boolText(isMoving());
   json += ",\"hold\":";
@@ -487,6 +536,15 @@ long commandParameter(String command) {
   return param.toInt();
 }
 
+long commandParameterAt(String command, int offset) {
+  if (command.length() <= offset) {
+    return 0;
+  }
+  String param = command.substring(offset);
+  param.trim();
+  return param.toInt();
+}
+
 String processCommand(String command) {
   command.trim();
   if (command.endsWith("#")) {
@@ -495,6 +553,26 @@ String processCommand(String command) {
   command.trim();
   if (command.length() == 0) {
     return String(DEVICE_RESPONSE) + "#";
+  }
+
+  // Two-char commands: degree / arcsecond moves (signed = direction).
+  if (command.startsWith("MD")) {
+    long deg1000 = commandParameterAt(command, 2);
+    if (deg1000 < -1000000L || deg1000 > 1000000L) {
+      return "ERR:degrees#";
+    }
+    startStepJog(degreesToSteps(deg1000 / 1000.0F));
+    broadcastStatus();
+    return statusResponse();
+  }
+  if (command.startsWith("MA")) {
+    long arcsec = commandParameterAt(command, 2);
+    if (arcsec < -1296000L || arcsec > 1296000L) {
+      return "ERR:arcsec#";
+    }
+    startStepJog(arcsecToSteps((float)arcsec));
+    broadcastStatus();
+    return statusResponse();
   }
 
   char code = command.charAt(0);
@@ -520,9 +598,21 @@ String processCommand(String command) {
           return "ERR:jog_rate#";
         }
         settings.jogMultiplier = (int)value;
+        settings.rateMode = 0;
         saveSettings();
         broadcastStatus();
         return String("Q ") + settings.jogMultiplier + "#";
+      }
+    case 'Y':
+      {
+        if (value < 1 || value > 10000) {
+          return "ERR:jog_speed#";
+        }
+        settings.jogStepsPerSec = (int)value;
+        settings.rateMode = 1;
+        saveSettings();
+        broadcastStatus();
+        return String("Y ") + settings.jogStepsPerSec + "#";
       }
     case 'M':
       {
@@ -712,6 +802,20 @@ void handleJogApi() {
       return;
     }
     startStepJog((int32_t)lround(stepsValue));
+  } else if (strcmp(action, "move_deg") == 0) {
+    double degrees;
+    if (!extractNumber(body, "degrees", degrees) || degrees < -1000.0 || degrees > 1000.0) {
+      sendJson(400, "{\"error\":\"invalid_degrees\"}");
+      return;
+    }
+    startStepJog(degreesToSteps((float)degrees));
+  } else if (strcmp(action, "move_arcsec") == 0) {
+    double arcsec;
+    if (!extractNumber(body, "arcsec", arcsec) || arcsec < -1296000.0 || arcsec > 1296000.0) {
+      sendJson(400, "{\"error\":\"invalid_arcsec\"}");
+      return;
+    }
+    startStepJog(arcsecToSteps((float)arcsec));
   } else {
     sendJson(400, "{\"error\":\"invalid_action\"}");
     return;
@@ -778,6 +882,20 @@ void handleSettingsPostApi() {
       return;
     }
     settings.jogMultiplier = (int)numberValue;
+  }
+  if (extractNumber(body, "jogStepsPerSec", numberValue)) {
+    if (numberValue < 1 || numberValue > 10000) {
+      sendJson(400, "{\"error\":\"invalid_jog_steps_per_sec\"}");
+      return;
+    }
+    settings.jogStepsPerSec = (int)numberValue;
+  }
+  if (extractNumber(body, "rateMode", numberValue)) {
+    if (numberValue < 0 || numberValue > 1) {
+      sendJson(400, "{\"error\":\"invalid_rate_mode\"}");
+      return;
+    }
+    settings.rateMode = (uint8_t)numberValue;
   }
   if (extractNumber(body, "maxJogRate", numberValue)) {
     if (numberValue < 100 || numberValue > 10000) {
