@@ -1,7 +1,6 @@
 #include "StepEngine.h"
 
-#include <core_esp8266_timer.h>
-
+// hw_timer1 (timer1_*) APIs are declared by <Arduino.h> in ESP8266 core 3.x.
 StepEngine AxisEngine;
 
 void StepEngine::begin(uint8_t stepPin, uint8_t dirPin) {
@@ -19,7 +18,7 @@ void StepEngine::begin(uint8_t stepPin, uint8_t dirPin) {
 
 // hw_timer1 NMI ISR. Register-only access, safe in NMI context.
 // GPIO_OUT_W1TS (set) = 0x60000304, GPIO_OUT_W1TC (clear) = 0x60000308.
-ICACHE_RAM_ATTR void StepEngine::timerIsr() {
+IRAM_ATTR void StepEngine::timerIsr() {
   StepEngine &e = AxisEngine;
   if (e._phase == 0) {
     if (e._mrate == 0) {
