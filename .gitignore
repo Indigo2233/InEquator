@@ -1,0 +1,32 @@
+# Arduino / PlatformIO
+.vscode/arduino.json
+.vscode/c_cpp_properties.json
+firmware/**/build/
+.pio/
+*.bin
+*.elf
+
+# .NET / Visual Studio
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# CMake / INDI
+build/
+CMakeFiles/
+CMakeCache.txt
+*.cmake.user
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*.log
